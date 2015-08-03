@@ -35,7 +35,6 @@ const (
 	minimumRate          = time.Second / maxRequestsPerSecond
 	methodExecute        = "execute"
 	maxRequestRepeat     = 10
-	errorTooManyRequests = 6
 )
 
 // int64s formats int64 as base10 string

@@ -13,7 +13,7 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	return e.Code.Error()
+	return fmt.Sprintf("%s (%d)", e.Message, e.Code)
 }
 
 func IsServerError(err error) bool {
@@ -34,20 +34,8 @@ type ErrorResponse struct {
 	Error Error `json:"error"`
 }
 
-func (s ServerError) String() string {
-	v, ok := map[ServerError]string{
-		ErrUnknown:                 "Unknown error occured, try again later",
-		ErrApplicationDisabled:     "Application disabled",
-		ErrInsufficientPermissions: "Insufficient permissions, use account.getAppPermissions",
-	}[s]
-	if !ok {
-		return strconv.Itoa(int(s))
-	}
-	return fmt.Sprintf("%s (%d)", v, s)
-}
-
 func (s ServerError) Error() string {
-	return s.String()
+	return strconv.Itoa(int(s))
 }
 
 const (
