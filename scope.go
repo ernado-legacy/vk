@@ -3,6 +3,7 @@ package vk
 import "strings"
 import "sort"
 
+// Permission of application
 type Permission string
 
 const (

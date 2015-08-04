@@ -2,16 +2,17 @@ package vk
 
 import (
 	"encoding/json"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 	"io"
+	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestErrors(t *testing.T) {
 	Convey("Errors", t, func() {
-		Convey("Recognition", func(){
+		Convey("Recognition", func() {
 			So(IsServerError(io.ErrUnexpectedEOF), ShouldBeFalse)
-			So(func(){ GetServerError(io.ErrUnexpectedEOF) }, ShouldPanic)
+			So(func() { GetServerError(io.ErrUnexpectedEOF) }, ShouldPanic)
 		})
 		Convey("Parsing from JSON", func() {
 			type Data struct {

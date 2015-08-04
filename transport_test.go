@@ -3,17 +3,18 @@ package vk
 import (
 	"bytes"
 	"encoding/json"
-	. "github.com/smartystreets/goconvey/convey"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestHttpClient(t *testing.T) {
-	client := getDefaultHttpClient()
+	client := getDefaultHTTPClient()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -54,11 +55,11 @@ func TestNewRequest(t *testing.T) {
 
 type errorReader struct{}
 
-func (_ errorReader) Read(p []byte) (n int, err error) {
+func (e errorReader) Read(p []byte) (n int, err error) {
 	return 0, io.ErrUnexpectedEOF
 }
 
-func (_ errorReader) Close() error {
+func (e errorReader) Close() error {
 	return nil
 }
 
@@ -74,17 +75,17 @@ func TestConcurrentEncoder(t *testing.T) {
 			]
 		}`
 		body := ioutil.NopCloser(bytes.NewBufferString(sData))
-		decoder := ConcurrentDecoder{Input: body}
+		decoder := concurrentDecoder{Input: body}
 		type Data struct {
 			Response []struct {
-				ID int64 `json:"id`
+				ID int64 `json:"id"`
 			} `json:"response"`
 		}
 		value := Data{}
 		err := decoder.Decode(&value)
 		So(err, ShouldBeNil)
 		Convey("Read error", func() {
-			decoder := ConcurrentDecoder{Input: errorReader{}}
+			decoder := concurrentDecoder{Input: errorReader{}}
 			value := Data{}
 			err := decoder.Decode(&value)
 			So(err, ShouldNotBeNil)
@@ -95,7 +96,7 @@ func TestConcurrentEncoder(t *testing.T) {
 			{"key":"user_id","value":"1"},{"key":"v","value":"5.35"}]}}
 			`
 			body := ioutil.NopCloser(bytes.NewBufferString(sData))
-			decoder := ConcurrentDecoder{Input: body}
+			decoder := concurrentDecoder{Input: body}
 			value := Data{}
 			err := decoder.Decode(&value)
 			So(err, ShouldNotBeNil)

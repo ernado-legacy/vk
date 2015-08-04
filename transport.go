@@ -12,17 +12,18 @@ import (
 )
 
 const (
-	defaultHttpTimeout        = 3 * time.Second
+	defaultHTTPTimeout        = 3 * time.Second
 	defaultRequestTimeout     = 15 * time.Second
 	defaultKeepAliveInterval  = 60 * time.Second
-	defaultHttpHeadersTimeout = defaultRequestTimeout
+	defaultHTTPHeadersTimeout = defaultRequestTimeout
 )
 
 var (
-	defaultHttpClient = getDefaultHttpClient()
+	defaultHTTPClient = getDefaultHTTPClient()
 )
 
-type HttpClient interface {
+// HTTPClient is abstaction under http client, that can Do requests
+type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
@@ -33,6 +34,7 @@ func must(err error) {
 	}
 }
 
+// NewRequest converts vk.Request to valid *http.Request
 func (c *Client) NewRequest(r Request) (req *http.Request) {
 	values := url.Values{}
 	// copy old params
@@ -58,12 +60,12 @@ func (c *Client) NewRequest(r Request) (req *http.Request) {
 	return req
 }
 
-type ConcurrentDecoder struct {
+type concurrentDecoder struct {
 	Input  io.ReadCloser
 	Output io.Writer
 }
 
-func (d ConcurrentDecoder) Decode(value interface{}) error {
+func (d concurrentDecoder) Decode(value interface{}) error {
 	if d.Output == nil {
 		d.Output = ioutil.Discard
 	}
@@ -131,17 +133,17 @@ func (d ConcurrentDecoder) Decode(value interface{}) error {
 	return err
 }
 
-func getDefaultHttpClient() HttpClient {
+func getDefaultHTTPClient() HTTPClient {
 	client := &http.Client{
 		Timeout: defaultRequestTimeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			Dial: (&net.Dialer{
-				Timeout:   defaultHttpTimeout,
+				Timeout:   defaultHTTPTimeout,
 				KeepAlive: defaultKeepAliveInterval,
 			}).Dial,
-			TLSHandshakeTimeout:   defaultHttpTimeout,
-			ResponseHeaderTimeout: defaultHttpHeadersTimeout,
+			TLSHandshakeTimeout:   defaultHTTPTimeout,
+			ResponseHeaderTimeout: defaultHTTPHeadersTimeout,
 		},
 	}
 	return client

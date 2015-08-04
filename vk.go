@@ -14,7 +14,7 @@ const (
 	paramScope        = "scope"
 	paramRedirectURI  = "redirect_uri"
 	paramDisplay      = "display"
-	paramHttps        = "https"
+	paramHTTPS        = "https"
 	paramResponseType = "response_type"
 
 	oauthHost         = "oauth.vk.com"
@@ -29,7 +29,7 @@ const (
 	defaultScheme  = "https"
 	defaultVersion = "5.35"
 	defaultMethod  = "GET"
-	defaultHttps   = "1"
+	defaultHTTPS   = "1"
 
 	maxRequestsPerSecond = 3
 	minimumRate          = time.Second / maxRequestsPerSecond
@@ -42,25 +42,30 @@ func int64s(v int64) string {
 	return strconv.FormatInt(v, 10)
 }
 
+// Client for vk api
 type Client struct {
-	httpClient HttpClient
+	httpClient HTTPClient
 }
 
+// Request to vk api
+// serializable
 type Request struct {
 	Method string     `json:"method"`
 	Token  string     `json:"token"`
 	Values url.Values `json:"values"`
 }
 
-func (c *Client) SetHttpClient(httpClient HttpClient) {
+// SetHTTPClient sets underlying http client
+func (c *Client) SetHTTPClient(httpClient HTTPClient) {
 	c.httpClient = httpClient
 }
 
 func (c *Client) addParams(values url.Values) {
 	values.Add(paramVersion, defaultVersion)
-	values.Add(paramHttps, defaultHttps)
+	values.Add(paramHTTPS, defaultHTTPS)
 }
 
+// Auth is helper struct for application authentication
 type Auth struct {
 	ID           int64
 	Scope        Scope
@@ -69,6 +74,7 @@ type Auth struct {
 	Display      string
 }
 
+// URL returns redirect url for application authentication
 func (a Auth) URL() string {
 	u := url.URL{}
 	u.Host = oauthHost
@@ -97,8 +103,9 @@ func (a Auth) URL() string {
 	return u.String()
 }
 
+// New creates and returns default vk api client
 func New() *Client {
 	c := new(Client)
-	c.SetHttpClient(defaultHttpClient)
+	c.SetHTTPClient(defaultHTTPClient)
 	return c
 }

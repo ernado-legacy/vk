@@ -1,11 +1,12 @@
 package vk
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewClient(t *testing.T) {
