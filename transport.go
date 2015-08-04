@@ -77,6 +77,19 @@ type vkResponseProcessor struct {
 	input io.Reader
 }
 
+// ResponseProcessor fills response struct from response
+type ResponseProcessor interface {
+	To(response Response) error
+}
+
+// Response will be filled by ResponseProcessor
+// Struct supposed to be like
+// 	type Data struct {
+// 	    Error `json:"error"`
+// 	    Response // ... some fields of response
+//	}
+//
+// Containing Error implements Response interface
 type Response interface {
 	ServerError() error
 	setRequest(request Request)
@@ -93,7 +106,7 @@ func (d vkResponseProcessor) To(response Response) error {
 	return response.ServerError()
 }
 
-func Process(input io.Reader) vkResponseProcessor {
+func Process(input io.Reader) ResponseProcessor {
 	return vkResponseProcessor{input}
 }
 
