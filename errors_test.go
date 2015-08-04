@@ -24,6 +24,11 @@ func TestErrors(t *testing.T) {
 			So(ErrZero.Is(Error{Code: ErrAlbumOverflow}), ShouldBeFalse)
 			So(ErrZero.Is(error(Error{Code: ErrAlbumOverflow})), ShouldBeFalse)
 		})
+		Convey("Set and get request", func() {
+			e := Error{}
+			e.setRequest(Request{Method: "test"})
+			So(e.Request.Method, ShouldEqual, "test")
+		})
 		Convey("Parsing from JSON", func() {
 			type Data struct {
 				Error ServerError `json:"error"`

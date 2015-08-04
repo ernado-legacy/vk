@@ -3,7 +3,6 @@ package vk
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -34,14 +33,28 @@ func must(err error) {
 	}
 }
 
-// NewRequest converts vk.Request to valid *http.Request
-func (c *Client) NewRequest(r Request) (req *http.Request) {
+func (c *Client) Do(request Request, response Response) error {
+	response.setRequest(request)
+	req := request.HTTP()
+	res, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		return ErrBadResponseCode
+	}
+	return Process(res.Body).To(response)
+}
+
+// HTTP converts to *http.Request
+func (r Request) HTTP() (req *http.Request) {
 	values := url.Values{}
 	// copy old params
 	for k, v := range r.Values {
 		values[k] = v
 	}
-	c.addParams(values)
+	values.Add(paramVersion, defaultVersion)
+	values.Add(paramHTTPS, defaultHTTPS)
 	if len(r.Token) != 0 {
 		values.Add(paramToken, r.Token)
 	}
@@ -60,77 +73,28 @@ func (c *Client) NewRequest(r Request) (req *http.Request) {
 	return req
 }
 
-type concurrentDecoder struct {
-	Input  io.ReadCloser
-	Output io.Writer
+type vkResponseProcessor struct {
+	input io.Reader
 }
 
-func (d concurrentDecoder) Decode(value interface{}) error {
-	if d.Output == nil {
-		d.Output = ioutil.Discard
+type Response interface {
+	ServerError() error
+	setRequest(request Request)
+}
+
+func (d vkResponseProcessor) To(response Response) error {
+	if rc, ok := d.input.(io.ReadCloser); ok {
+		defer rc.Close()
 	}
-
-	// initializing flow pipes for concurrent decoding
-	errorR, errorW := io.Pipe()
-	valueR, valueW := io.Pipe()
-	debugR, debugW := io.Pipe()
-	var (
-		decoderErrorChan      = make(chan error)
-		errorDecoderErrorChan = make(chan error)
-		readerErrorChan       = make(chan error)
-		decoder               = json.NewDecoder(errorR)
-		errorDecoder          = json.NewDecoder(valueR)
-	)
-
-	// value decoding goroutine
-	go func() {
-		decoderErrorChan <- decoder.Decode(value)
-	}()
-
-	// data reading goroutine
-	go func() {
-		defer d.Input.Close()
-		defer errorR.Close()
-		defer valueR.Close()
-		defer debugR.Close()
-		writer := io.MultiWriter(valueW, errorW, debugW)
-		_, err := io.Copy(writer, d.Input)
-		readerErrorChan <- err
-	}()
-
-	// data copying goroutine
-	go io.Copy(d.Output, debugR)
-
-	// server error decoding goroutine
-	errResponse := new(ErrorResponse)
-	go func() {
-		errorDecoder.Decode(errResponse)
-		errValue := errResponse.Error
-		if errValue.Code != ErrZero {
-			errorDecoderErrorChan <- errValue
-		} else {
-			errorDecoderErrorChan <- nil
-		}
-	}()
-
-	// retrieving all errors from channels
-	var err error
-	for i := 0; i < 3; i++ {
-		check := func(e error) {
-			if e != nil {
-				err = e
-			}
-		}
-		select {
-		case e := <-readerErrorChan:
-			check(e)
-		case e := <-decoderErrorChan:
-			check(e)
-		case e := <-errorDecoderErrorChan:
-			check(e)
-		}
+	decoder := json.NewDecoder(d.input)
+	if err := decoder.Decode(response); err != nil {
+		return err
 	}
-	return err
+	return response.ServerError()
+}
+
+func Process(input io.Reader) vkResponseProcessor {
+	return vkResponseProcessor{input}
 }
 
 func getDefaultHTTPClient() HTTPClient {

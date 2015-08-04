@@ -7,9 +7,27 @@ import (
 
 type ServerError int
 
+type RequestParam struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type Error struct {
-	Code    ServerError `json:"error_code"`
-	Message string      `json:"error_msg"`
+	Code    ServerError    `json:"error_code"`
+	Message string         `json:"error_msg"`
+	Params  []RequestParam `json:"request_params"`
+	Request Request        `json:"-"`
+}
+
+func (e *Error) setRequest(r Request) {
+	e.Request = r
+}
+
+func (e Error) ServerError() error {
+	if e.Code == ErrZero {
+		return nil
+	}
+	return e
 }
 
 func (e Error) Error() string {
@@ -85,4 +103,6 @@ const (
 	ErrMoneyTransferNotAllowed   ServerError = 500
 	ErrInsufficientPermissionsAd ServerError = 600
 	ErrInternalServerErrorAd     ServerError = 603
+
+	ErrBadResponseCode ServerError = -1
 )

@@ -47,6 +47,11 @@ type Client struct {
 	httpClient HTTPClient
 }
 
+// APIClient preforms request and fills
+type APIClient interface {
+	Do(request Request, response Response) error
+}
+
 // Request to vk api
 // serializable
 type Request struct {
@@ -58,11 +63,6 @@ type Request struct {
 // SetHTTPClient sets underlying http client
 func (c *Client) SetHTTPClient(httpClient HTTPClient) {
 	c.httpClient = httpClient
-}
-
-func (c *Client) addParams(values url.Values) {
-	values.Add(paramVersion, defaultVersion)
-	values.Add(paramHTTPS, defaultHTTPS)
 }
 
 // Auth is helper struct for application authentication
@@ -109,3 +109,8 @@ func New() *Client {
 	c.SetHTTPClient(defaultHTTPClient)
 	return c
 }
+
+var (
+	// DefaultClient uses defaultHTTPClient for transport
+	DefaultClient = New()
+)

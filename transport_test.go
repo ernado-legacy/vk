@@ -31,30 +31,9 @@ func TestHttpClient(t *testing.T) {
 	})
 }
 
-func BenchmarkConcurrentEncoder(b *testing.B) {
-	type Data struct {
-		Response []struct {
-			ID int64 `json:"id"`
-		} `json:"response"`
-	}
-	value := Data{}
-	for i := 0; i < b.N; i++ {
-		sData := `{
-			"response": [
-				{
-					"id": 1,
-					"first_name": "Павел",
-					"last_name": "Дуров"
-				}
-			]
-		}`
-		body := ioutil.NopCloser(bytes.NewBufferString(sData))
-		concurrentDecoder{Input: body}.Decode(&value)
-	}
-}
-
 func BenchmarkDummyEncoder(b *testing.B) {
 	type Data struct {
+		Error    `json:"error"`
 		Response []struct {
 			ID int64 `json:"id"`
 		} `json:"response"`
@@ -75,6 +54,29 @@ func BenchmarkDummyEncoder(b *testing.B) {
 	}
 }
 
+func BenchmarkVKEncoder(b *testing.B) {
+	type Data struct {
+		Error    `json:"error"`
+		Response []struct {
+			ID int64 `json:"id"`
+		} `json:"response"`
+	}
+	value := Data{}
+	for i := 0; i < b.N; i++ {
+		sData := `{
+			"response": [
+				{
+					"id": 1,
+					"first_name": "Павел",
+					"last_name": "Дуров"
+				}
+			]
+		}`
+		body := ioutil.NopCloser(bytes.NewBufferString(sData))
+		Process(body).To(&value)
+	}
+}
+
 func TestMust(t *testing.T) {
 	Convey("Must Panic", t, func() {
 		err := ErrUnknown
@@ -85,13 +87,11 @@ func TestMust(t *testing.T) {
 }
 
 func TestNewRequest(t *testing.T) {
-	client := New()
-
 	Convey("New request", t, func() {
 		values := url.Values{}
 		values.Add("foo", "bar")
 		r := Request{Token: "token", Method: "users.get", Values: values}
-		req := client.NewRequest(r)
+		req := r.HTTP()
 		So(req.URL.Host, ShouldEqual, defaultHost)
 		So(req.URL.String(), ShouldEqual, "https://api.vk.com/method/users.get?access_token=token&foo=bar&https=1&v=5.35")
 	})
@@ -107,8 +107,8 @@ func (e errorReader) Close() error {
 	return nil
 }
 
-func TestConcurrentEncoder(t *testing.T) {
-	Convey("Encoder", t, func() {
+func TestReponseProcessor(t *testing.T) {
+	Convey("Decoder", t, func() {
 		sData := `{
 			"response": [
 				{
@@ -119,30 +119,23 @@ func TestConcurrentEncoder(t *testing.T) {
 			]
 		}`
 		body := ioutil.NopCloser(bytes.NewBufferString(sData))
-		decoder := concurrentDecoder{Input: body}
 		type Data struct {
+			Error    `json:"error"`
 			Response []struct {
 				ID int64 `json:"id"`
 			} `json:"response"`
 		}
-		value := Data{}
-		err := decoder.Decode(&value)
-		So(err, ShouldBeNil)
+		So(Process(body).To(&Data{}), ShouldBeNil)
 		Convey("Read error", func() {
-			decoder := concurrentDecoder{Input: errorReader{}}
-			value := Data{}
-			err := decoder.Decode(&value)
-			So(err, ShouldNotBeNil)
+			So(Process(errorReader{}).To(&Data{}), ShouldNotBeNil)
 		})
 		Convey("Error", func() {
 			sData := `{"error":{"error_code":10,"error_msg":"Internal server error: could not get application",
 			"request_params":[{"key":"oauth","value":"1"},{"key":"method","value":"users.get"},
-			{"key":"user_id","value":"1"},{"key":"v","value":"5.35"}]}}
-			`
-			body := ioutil.NopCloser(bytes.NewBufferString(sData))
-			decoder := concurrentDecoder{Input: body}
+			{"key":"user_id","value":"1"},{"key":"v","value":"5.35"}]}}`
+			body := bytes.NewBufferString(sData)
 			value := Data{}
-			err := decoder.Decode(&value)
+			err := Process(body).To(&value)
 			So(err, ShouldNotBeNil)
 			So(IsServerError(err), ShouldBeTrue)
 			serverError := GetServerError(err)
@@ -152,13 +145,11 @@ func TestConcurrentEncoder(t *testing.T) {
 }
 
 func TestRequestSerialization(t *testing.T) {
-	client := New()
-
 	Convey("New request", t, func() {
 		values := url.Values{}
 		values.Add("foo", "bar")
 		r := Request{Token: "token", Method: "users.get", Values: values}
-		req := client.NewRequest(r)
+		req := r.HTTP()
 		So(req.URL.Host, ShouldEqual, defaultHost)
 		So(req.URL.String(), ShouldEqual, "https://api.vk.com/method/users.get?access_token=token&foo=bar&https=1&v=5.35")
 
@@ -171,6 +162,76 @@ func TestRequestSerialization(t *testing.T) {
 				newRequest := Request{}
 				So(json.Unmarshal(data, &newRequest), ShouldBeNil)
 			})
+		})
+	})
+}
+
+type simpleHTTPClientMock struct {
+	response *http.Response
+	err      error
+}
+
+type apiClientMock struct {
+	callback func(Request, Response) error
+}
+
+func (client apiClientMock) Do(request Request, response Response) error {
+	return client.callback(request, response)
+}
+
+func (m simpleHTTPClientMock) Do(request *http.Request) (*http.Response, error) {
+	return m.response, m.err
+}
+
+func TestDo(t *testing.T) {
+	client := New()
+
+	Convey("Do request", t, func() {
+		sData := `{
+			"response": [
+				{
+					"id": 1,
+					"first_name": "Павел",
+					"last_name": "Дуров"
+				}
+			]
+		}`
+		body := ioutil.NopCloser(bytes.NewBufferString(sData))
+		httpResponse := &http.Response{Body: body, StatusCode: http.StatusOK}
+		client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse})
+		type Data struct {
+			Error    `json:"error"`
+			Response []struct {
+				ID   int64  `json:"id"`
+				Name string `json:"first_name"`
+			} `json:"response"`
+		}
+
+		request := Request{Method: "users.get"}
+		response := &Data{}
+
+		So(client.Do(request, response), ShouldBeNil)
+		So(response.Response[0].ID, ShouldEqual, 1)
+		So(response.Response[0].Name, ShouldEqual, "Павел")
+		So(response.Request.Method, ShouldEqual, "users.get")
+
+		Convey("Bad status", func() {
+			client := New()
+			httpResponse := &http.Response{Body: body, StatusCode: http.StatusBadRequest}
+			client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse})
+			request := Request{Method: "users.get"}
+			response := &Data{}
+
+			So(client.Do(request, response), ShouldEqual, ErrBadResponseCode)
+		})
+		Convey("Http error", func() {
+			client := New()
+			httpResponse := &http.Response{Body: body, StatusCode: http.StatusBadRequest}
+			client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse, err: ErrBadResponseCode})
+			request := Request{Method: "users.get"}
+			response := &Data{}
+
+			So(client.Do(request, response), ShouldEqual, ErrBadResponseCode)
 		})
 	})
 }
