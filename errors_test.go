@@ -14,6 +14,16 @@ func TestErrors(t *testing.T) {
 			So(IsServerError(io.ErrUnexpectedEOF), ShouldBeFalse)
 			So(func() { GetServerError(io.ErrUnexpectedEOF) }, ShouldPanic)
 		})
+		Convey("Equality", func() {
+			So(ErrZero.Is(ErrZero), ShouldBeTrue)
+			So(ErrZero.Is(ErrAlbumOverflow), ShouldBeFalse)
+			So(ErrAlbumOverflow.Is(ErrZero), ShouldBeFalse)
+			So(ErrZero.Is(io.ErrUnexpectedEOF), ShouldBeFalse)
+			So(ErrZero.Is(Error{Code: ErrZero}), ShouldBeTrue)
+			So(ErrZero.Is(error(Error{Code: ErrZero})), ShouldBeTrue)
+			So(ErrZero.Is(Error{Code: ErrAlbumOverflow}), ShouldBeFalse)
+			So(ErrZero.Is(error(Error{Code: ErrAlbumOverflow})), ShouldBeFalse)
+		})
 		Convey("Parsing from JSON", func() {
 			type Data struct {
 				Error ServerError `json:"error"`

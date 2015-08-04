@@ -16,6 +16,20 @@ func (e Error) Error() string {
 	return fmt.Sprintf("%s (%d)", e.Message, e.Code)
 }
 
+// Is returns true, if err equals (or is Error with code equals) e
+func (e ServerError) Is(err error) bool {
+	if error(e) == err {
+		return true
+	}
+	if another, ok := err.(ServerError); ok {
+		return another == e
+	}
+	if another, ok := err.(Error); ok {
+		return another.Code == e
+	}
+	return false
+}
+
 func IsServerError(err error) bool {
 	if _, ok := err.(Error); ok {
 		return true
