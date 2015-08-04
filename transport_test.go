@@ -31,6 +31,50 @@ func TestHttpClient(t *testing.T) {
 	})
 }
 
+func BenchmarkConcurrentEncoder(b *testing.B) {
+	type Data struct {
+		Response []struct {
+			ID int64 `json:"id"`
+		} `json:"response"`
+	}
+	value := Data{}
+	for i := 0; i < b.N; i++ {
+		sData := `{
+			"response": [
+				{
+					"id": 1,
+					"first_name": "Павел",
+					"last_name": "Дуров"
+				}
+			]
+		}`
+		body := ioutil.NopCloser(bytes.NewBufferString(sData))
+		concurrentDecoder{Input: body}.Decode(&value)
+	}
+}
+
+func BenchmarkDummyEncoder(b *testing.B) {
+	type Data struct {
+		Response []struct {
+			ID int64 `json:"id"`
+		} `json:"response"`
+	}
+	value := Data{}
+	for i := 0; i < b.N; i++ {
+		sData := `{
+			"response": [
+				{
+					"id": 1,
+					"first_name": "Павел",
+					"last_name": "Дуров"
+				}
+			]
+		}`
+		body := ioutil.NopCloser(bytes.NewBufferString(sData))
+		json.NewDecoder(body).Decode(&value)
+	}
+}
+
 func TestMust(t *testing.T) {
 	Convey("Must Panic", t, func() {
 		err := ErrUnknown
