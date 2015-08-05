@@ -52,7 +52,7 @@ type Client struct {
 
 // APIClient preforms request and fills
 type APIClient interface {
-	Do(request Request, response Response) error
+	Do(request Request) (*Response, error)
 }
 
 // Request to vk api

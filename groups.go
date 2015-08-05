@@ -4,9 +4,21 @@ import (
 	"errors"
 )
 
+type Resource struct {
+	APIClient
+	RequestFactory
+}
+
+func (r Resource) Decode(request Request, v interface{}) error {
+	res, err := r.Do(request)
+	if err != nil {
+		return err
+	}
+	return res.To(v)
+}
+
 type Groups struct {
-	factory RequestFactory
-	api     APIClient
+	Resource
 }
 
 const (
@@ -69,7 +81,6 @@ type groupSearchResponse struct {
 }
 
 func (g Groups) GetMembers(q GroupSearchFields) (result GroupSearchResult, err error) {
-	request := g.factory.Request(methodGroupsGetMembers, q)
-	response := groupSearchResponse{}
-	return response.Response, g.api.Do(request, &response)
+	request := g.Request(methodGroupsGetMembers, q)
+	return result, g.Decode(request, &result)
 }

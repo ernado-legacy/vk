@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"errors"
 	"time"
 	"bytes"
 )
@@ -34,17 +35,19 @@ func must(err error) {
 	}
 }
 
-func (c *Client) Do(request Request, response Response) error {
+func (c *Client) Do(request Request) (response *Response, err error) {
+	response = new(Response)
 	response.setRequest(request)
 	req := request.HTTP()
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		return ErrBadResponseCode
+		return nil, ErrBadResponseCode
 	}
-	return Process(res.Body).To(response)
+
+	return Process(res.Body)
 }
 
 // HTTP converts to *http.Request
@@ -80,22 +83,9 @@ type vkResponseProcessor struct {
 
 // ResponseProcessor fills response struct from response
 type ResponseProcessor interface {
-	To(response Response) error
-	Raw(v interface{}) error
+	To(response *Response, err error)
 }
 
-// Response will be filled by ResponseProcessor
-// Struct supposed to be like
-// 	type Data struct {
-// 	    Error `json:"error"`
-// 	    Response // ... some fields of response
-//	}
-//
-// Containing Error implements Response interface
-type Response interface {
-	ServerError() error
-	setRequest(request Request)
-}
 
 // RawString is a raw encoded JSON object.
 // It implements Marshaler and Unmarshaler and can
@@ -121,12 +111,16 @@ func (m *Raw) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type RawResponse struct {
+type Response struct {
 	Error        `json:"error"`
 	Response Raw `json:"response"`
 }
 
-func (d vkResponseProcessor) To(response Response) error {
+func (r Response) To(v interface{}) error {
+	return json.Unmarshal(r.Response.Bytes(), v)
+}
+
+func (d vkResponseProcessor) To(response *Response) error {
 	if rc, ok := d.input.(io.ReadCloser); ok {
 		defer rc.Close()
 	}
@@ -137,16 +131,29 @@ func (d vkResponseProcessor) To(response Response) error {
 	return response.ServerError()
 }
 
-func (d vkResponseProcessor) Raw(v interface{}) error {
-	raw := &RawResponse{}
-	if err := d.To(raw); err != nil {
-		return err
-	}
-	return json.Unmarshal(raw.Response.Bytes(), v)
+func Process(input io.Reader) (response *Response, err error) {
+	response = new(Response)
+	return response, vkResponseProcessor{input}.To(response)
 }
 
-func Process(input io.Reader) ResponseProcessor {
-	return vkResponseProcessor{input}
+type Encoder struct {
+	response *Response
+	err error
+}
+
+func (e Encoder) To(v interface{}) error {
+	if e.err != nil {
+		return e.err
+	}
+	if e.response == nil {
+		return errors.New("wtf")
+	}
+	return e.response.To(v)
+}
+
+func Encode(input io.Reader) Encoder {
+	res, err := Process(input)
+	return Encoder{res, err}
 }
 
 func getDefaultHTTPClient() HTTPClient {

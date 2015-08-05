@@ -73,7 +73,7 @@ func BenchmarkVKEncoder(b *testing.B) {
 			]
 		}`
 		body := ioutil.NopCloser(bytes.NewBufferString(sData))
-		Process(body).To(&value)
+		So(Encode(body).To(&value), ShouldBeNil)
 	}
 }
 
@@ -119,55 +119,12 @@ func TestResponseProcessor(t *testing.T) {
 			]
 		}`
 		body := ioutil.NopCloser(bytes.NewBufferString(sData))
-		type Data struct {
-			Error    `json:"error"`
-			Response []struct {
-				ID int64 `json:"id"`
-			} `json:"response"`
-		}
-		So(Process(body).To(&Data{}), ShouldBeNil)
-		Convey("Read error", func() {
-			So(Process(errorReader{}).To(&Data{}), ShouldNotBeNil)
-		})
-		Convey("Error", func() {
-			sData := `{"error":{"error_code":10,"error_msg":"Internal server error: could not get application",
-			"request_params":[{"key":"oauth","value":"1"},{"key":"method","value":"users.get"},
-			{"key":"user_id","value":"1"},{"key":"v","value":"5.35"}]}}`
-			body := bytes.NewBufferString(sData)
-			value := Data{}
-			err := Process(body).To(&value)
-			So(err, ShouldNotBeNil)
-			So(IsServerError(err), ShouldBeTrue)
-			serverError := GetServerError(err)
-			So(serverError.Code, ShouldEqual, ErrInternalServerError)
-		})
-	})
-}
-
-func TestRawResponseProcessor(t *testing.T) {
-	Convey("Encode", t, func(){
-		data, err := Raw{1}.MarshalJSON()
-		So(err, ShouldBeNil)
-		So(data[0], ShouldEqual, 1)
-	})
-	Convey("Decoder", t, func() {
-		sData := `{
-			"response": [
-				{
-					"id": 1,
-					"first_name": "Павел",
-					"last_name": "Дуров"
-				}
-			]
-		}`
-		body := ioutil.NopCloser(bytes.NewBufferString(sData))
 		type Data []struct {
 			ID int64 `json:"id"`
 		}
-		var value Data
-		So(Process(body).Raw(&value), ShouldBeNil)
+		So(Encode(body).To(&Data{}), ShouldBeNil)
 		Convey("Read error", func() {
-			So(Process(errorReader{}).Raw(&value), ShouldNotBeNil)
+			So(Encode(errorReader{}).To(&Data{}), ShouldNotBeNil)
 		})
 		Convey("Error", func() {
 			sData := `{"error":{"error_code":10,"error_msg":"Internal server error: could not get application",
@@ -175,7 +132,7 @@ func TestRawResponseProcessor(t *testing.T) {
 			{"key":"user_id","value":"1"},{"key":"v","value":"5.35"}]}}`
 			body := bytes.NewBufferString(sData)
 			value := Data{}
-			err := Process(body).Raw(&value)
+			err := Encode(body).To(&value)
 			So(err, ShouldNotBeNil)
 			So(IsServerError(err), ShouldBeTrue)
 			serverError := GetServerError(err)
@@ -239,72 +196,71 @@ func TestDo(t *testing.T) {
 		body := ioutil.NopCloser(bytes.NewBufferString(sData))
 		httpResponse := &http.Response{Body: body, StatusCode: http.StatusOK}
 		client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse})
-		type Data struct {
-			Error    `json:"error"`
-			Response []struct {
-				ID   int64  `json:"id"`
-				Name string `json:"first_name"`
-			} `json:"response"`
+		type Data []struct {
+			ID   int64  `json:"id"`
+			Name string `json:"first_name"`
 		}
 
 		request := Request{Method: "users.get"}
-		response := &Data{}
+		response := Data{}
 
-		So(client.Do(request, response), ShouldBeNil)
-		So(response.Response[0].ID, ShouldEqual, 1)
-		So(response.Response[0].Name, ShouldEqual, "Павел")
-		So(response.Request.Method, ShouldEqual, "users.get")
+		res, err := client.Do(request)
+		So(err, ShouldBeNil)
+		So(res.To(&response), ShouldBeNil)
+		So(response[0].ID, ShouldEqual, 1)
+		So(response[0].Name, ShouldEqual, "Павел")
 
 		Convey("Bad status", func() {
 			client := New()
 			httpResponse := &http.Response{Body: body, StatusCode: http.StatusBadRequest}
 			client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse})
 			request := Request{Method: "users.get"}
-			response := &Data{}
+			//			response := &Data{}
 
-			So(client.Do(request, response), ShouldEqual, ErrBadResponseCode)
+			_, err := client.Do(request)
+			So(err, ShouldEqual, ErrBadResponseCode)
 		})
 		Convey("Http error", func() {
 			client := New()
 			httpResponse := &http.Response{Body: body, StatusCode: http.StatusBadRequest}
 			client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse, err: ErrBadResponseCode})
 			request := Request{Method: "users.get"}
-			response := &Data{}
+			//			response := &Data{}
 
-			So(client.Do(request, response), ShouldEqual, ErrBadResponseCode)
+			_, err := client.Do(request)
+			So(err, ShouldEqual, ErrBadResponseCode)
 		})
 	})
 }
 
-
-func TestDoRawResponse(t *testing.T) {
-	client := New()
-
-	Convey("Do request", t, func() {
-		sData := `{
-			"response": [
-				{
-					"id": 1,
-					"first_name": "Павел",
-					"last_name": "Дуров"
-				}
-			]
-		}`
-		body := ioutil.NopCloser(bytes.NewBufferString(sData))
-		httpResponse := &http.Response{Body: body, StatusCode: http.StatusOK}
-		client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse})
-
-		request := Request{Method: "users.get"}
-		response := &RawResponse{}
-
-		So(client.Do(request, response), ShouldBeNil)
-		expectedRaw := `[
-				{
-					"id": 1,
-					"first_name": "Павел",
-					"last_name": "Дуров"
-				}
-			]`
-		So(expectedRaw, ShouldEqual, response.Response.String())
-	})
-}
+//func TestDoRawResponse(t *testing.T) {
+//	client := New()
+//
+//	Convey("Do request", t, func() {
+//		sData := `{
+//			"response": [
+//				{
+//					"id": 1,
+//					"first_name": "Павел",
+//					"last_name": "Дуров"
+//				}
+//			]
+//		}`
+//		body := ioutil.NopCloser(bytes.NewBufferString(sData))
+//		httpResponse := &http.Response{Body: body, StatusCode: http.StatusOK}
+//		client.SetHTTPClient(simpleHTTPClientMock{response: httpResponse})
+//
+//		request := Request{Method: "users.get"}
+//		res, err := client.Do(request)
+//		So(err, ShouldBeNil)
+//
+//		expectedRaw := `[
+//				{
+//					"id": 1,
+//					"first_name": "Павел",
+//					"last_name": "Дуров"
+//				}
+//			]`
+//		So(expectedRaw, ShouldEqual, res.Response.String())
+//	})
+//}

@@ -6,18 +6,18 @@ import (
 	"bytes"
 	"encoding/json"
 	. "github.com/smartystreets/goconvey/convey"
-	"log"
 )
 
 type apiJSONMock struct {
 	response string
 }
 
-func (api apiJSONMock) Do(req Request, res Response) error {
+func (api apiJSONMock) Do(req Request) (res *Response, err error) {
 	if _, err := json.Marshal(req); err != nil {
-		return err
+		return nil, err
 	}
-	return json.NewDecoder(bytes.NewBufferString(api.response)).Decode(res)
+	res = new(Response)
+	return res, json.NewDecoder(bytes.NewBufferString(api.response)).Decode(res)
 }
 
 func TestGroups(t *testing.T) {
@@ -29,8 +29,7 @@ func TestGroups(t *testing.T) {
 		"sex":2,"bdate":"24.6","city":{"id":2,"title":"Санкт-Петербург"}, "country":{"id":1,"title":"Россия"}},
 		{"id":4234,"first_name":"Никита","last_name":"Слушкин","sex":2,"city":{"id":2,"title":"Санкт-Петербург"}}]}}
 		`}
-		log.Println(mock.response)
-		g := Groups{DefaultFactory, mock}
+		g := Groups{Resource{APIClient: mock, RequestFactory: DefaultFactory}}
 		members, err := g.GetMembers(GroupSearchFields{})
 		So(err, ShouldBeNil)
 		So(members.Count, ShouldEqual, 309676)
