@@ -1,9 +1,12 @@
 package vk
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/fatih/structs"
 )
 
 const (
@@ -74,6 +77,30 @@ type Auth struct {
 	Display      string
 }
 
+// RequestFactory generates requests
+type RequestFactory struct {
+	Token string
+}
+
+// Request generate new request with provided method and arguments
+func (f RequestFactory) Request(method string, arguments interface{}) (request Request) {
+	request.Token = f.Token
+	request.Method = method
+	if arguments != nil {
+		var argsMap map[string]interface{}
+		if converted, ok := arguments.(map[string]interface{}); ok {
+			argsMap = converted
+		} else {
+			argsMap = structs.New(arguments).Map()
+		}
+		request.Values = url.Values{}
+		for k, v := range argsMap {
+			request.Values.Add(k, fmt.Sprint(v))
+		}
+	}
+	return request
+}
+
 // URL returns redirect url for application authentication
 func (a Auth) URL() string {
 	u := url.URL{}
@@ -113,4 +140,6 @@ func New() *Client {
 var (
 	// DefaultClient uses defaultHTTPClient for transport
 	DefaultClient = New()
+	// DefaultFactory with blank token
+	DefaultFactory = RequestFactory{}
 )
