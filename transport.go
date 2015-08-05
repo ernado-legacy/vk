@@ -80,6 +80,7 @@ type vkResponseProcessor struct {
 // ResponseProcessor fills response struct from response
 type ResponseProcessor interface {
 	To(response Response) error
+	Raw(v interface{}) error
 }
 
 // Response will be filled by ResponseProcessor
@@ -95,6 +96,31 @@ type Response interface {
 	setRequest(request Request)
 }
 
+// RawString is a raw encoded JSON object.
+// It implements Marshaler and Unmarshaler and can
+// be used to delay JSON decoding or precompute a JSON encoding.
+type Raw []byte
+
+func (r Raw) Bytes() []byte {
+	return []byte(r)
+}
+
+// MarshalJSON returns *m as the JSON encoding of m.
+func (m Raw) MarshalJSON() ([]byte, error) {
+	return m, nil
+}
+
+// UnmarshalJSON sets *m to a copy of data.
+func (m *Raw) UnmarshalJSON(data []byte) error {
+	*m = data
+	return nil
+}
+
+type RawResponse struct {
+	Error        `json:"error"`
+	Response Raw `json:"response"`
+}
+
 func (d vkResponseProcessor) To(response Response) error {
 	if rc, ok := d.input.(io.ReadCloser); ok {
 		defer rc.Close()
@@ -104,6 +130,14 @@ func (d vkResponseProcessor) To(response Response) error {
 		return err
 	}
 	return response.ServerError()
+}
+
+func (d vkResponseProcessor) Raw(v interface{}) error {
+	raw := &RawResponse{}
+	if err := d.To(raw); err != nil {
+		return err
+	}
+	return json.Unmarshal(raw.Response.Bytes(), v)
 }
 
 func Process(input io.Reader) ResponseProcessor {
