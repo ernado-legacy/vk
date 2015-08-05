@@ -39,7 +39,7 @@ func TestGroups(t *testing.T) {
 		user := members.Items[0]
 		So(user.Country.Is(Russia), ShouldBeTrue)
 		Convey("JSON", func() {
-			Convey("Marshal", func(){
+			Convey("Marshal", func() {
 				v := struct {
 					Value Bool
 				}{true}

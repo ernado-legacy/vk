@@ -1,7 +1,8 @@
 package vk
+
 import (
-	"io"
 	"errors"
+	"io"
 )
 
 type Resource struct {
@@ -30,7 +31,7 @@ const (
 type Bool bool
 
 const (
-	byteOne = 49
+	byteOne  = 49
 	byteZero = 48
 )
 

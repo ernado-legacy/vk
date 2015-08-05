@@ -42,7 +42,7 @@ func TestFactory(t *testing.T) {
 			So(r.Token, ShouldEqual, "token")
 			So(r.Values.Get("test"), ShouldEqual, "1234567891")
 		})
-		Convey("From struct", func(){
+		Convey("From struct", func() {
 			f := RequestFactory{"token"}
 			type Data struct {
 				Test int `structs:"test"`

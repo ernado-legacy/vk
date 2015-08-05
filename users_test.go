@@ -12,7 +12,7 @@ func TestUserStringer(t *testing.T) {
 		So(Male.String(), ShouldEqual, "male")
 		So(SexUnknown.String(), ShouldEqual, "unknown")
 	})
-	Convey("Country", t, func(){
+	Convey("Country", t, func() {
 		So(Country{Russia, "Россия"}.String(), ShouldEqual, "Россия")
 		So(Country{CountryUnknown, "t"}.String(), ShouldEqual, "unknown")
 		So(Country{Russia, "Россия"}.Is(Russia), ShouldBeTrue)

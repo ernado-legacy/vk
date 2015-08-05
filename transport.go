@@ -1,15 +1,15 @@
 package vk
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"path"
-	"errors"
 	"time"
-	"bytes"
 )
 
 const (
@@ -86,7 +86,6 @@ type ResponseProcessor interface {
 	To(response *Response, err error)
 }
 
-
 // RawString is a raw encoded JSON object.
 // It implements Marshaler and Unmarshaler and can
 // be used to delay JSON decoding or precompute a JSON encoding.
@@ -112,7 +111,7 @@ func (m *Raw) UnmarshalJSON(data []byte) error {
 }
 
 type Response struct {
-	Error        `json:"error"`
+	Error    `json:"error"`
 	Response Raw `json:"response"`
 }
 
@@ -138,7 +137,7 @@ func Process(input io.Reader) (response *Response, err error) {
 
 type Encoder struct {
 	response *Response
-	err error
+	err      error
 }
 
 func (e Encoder) To(v interface{}) error {
