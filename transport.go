@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path"
 	"time"
+	"bytes"
 )
 
 const (
@@ -103,6 +104,10 @@ type Raw []byte
 
 func (r Raw) Bytes() []byte {
 	return []byte(r)
+}
+
+func (r Raw) String() string {
+	return bytes.NewBuffer(r).String()
 }
 
 // MarshalJSON returns *m as the JSON encoding of m.

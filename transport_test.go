@@ -298,5 +298,13 @@ func TestDoRawResponse(t *testing.T) {
 		response := &RawResponse{}
 
 		So(client.Do(request, response), ShouldBeNil)
+		expectedRaw := `[
+				{
+					"id": 1,
+					"first_name": "Павел",
+					"last_name": "Дуров"
+				}
+			]`
+		So(expectedRaw, ShouldEqual, response.Response.String())
 	})
 }
