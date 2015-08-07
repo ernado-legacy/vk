@@ -144,6 +144,14 @@ func TestResponseProcessor(t *testing.T) {
 	})
 }
 
+func TestBool(t *testing.T) {
+	Convey("Ok", t, func() {
+		v := &url.Values{}
+		So(Bool(false).EncodeValues("test", v), ShouldBeNil)
+		So(v.Get("test"), ShouldEqual, "0")
+	})
+}
+
 func TestRequestSerialization(t *testing.T) {
 	Convey("New request", t, func() {
 		values := url.Values{}

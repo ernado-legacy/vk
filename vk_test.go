@@ -36,16 +36,10 @@ func TestFactory(t *testing.T) {
 		Convey("Default factory  request should not contain token", func() {
 			So(DefaultFactory.Request("method", nil).Token, ShouldBeBlank)
 		})
-		Convey("Should correctly convert args", func() {
-			f := Factory{"token"}
-			r := f.Request("method", map[string]interface{}{"test": 1234567891})
-			So(r.Token, ShouldEqual, "token")
-			So(r.Values.Get("test"), ShouldEqual, "1234567891")
-		})
 		Convey("From struct", func() {
 			f := Factory{"token"}
 			type Data struct {
-				Test int `structs:"test"`
+				Test int `url:"test"`
 			}
 			args := Data{1234567891}
 			r := f.Request("method", args)

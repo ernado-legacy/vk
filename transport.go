@@ -24,6 +24,48 @@ var (
 	defaultHTTPClient = getDefaultHTTPClient()
 )
 
+// Bool is special format for vk bool values
+// that are represented as integers - 1,0
+type Bool bool
+
+const (
+	byteOne  = 49
+	byteZero = 48
+)
+
+func (v Bool) MarshalJSON() ([]byte, error) {
+	if v {
+		return []byte{byteOne}, nil
+	}
+	return []byte{byteZero}, nil
+}
+
+func (b Bool) EncodeValues(key string, v *url.Values) error {
+	if b {
+		v.Add(key, "1")
+	} else {
+		v.Add(key, "0")
+	}
+	return nil
+}
+
+func (v *Bool) UnmarshalJSON(data []byte) error {
+	if data == nil || len(data) == 0 {
+		return nil
+	}
+	if len(data) != 1 {
+		return io.ErrUnexpectedEOF
+	}
+	if data[0] == byteOne {
+		*v = true
+	} else if data[0] == byteZero {
+		*v = false
+	} else {
+		return errors.New("bool value overflow")
+	}
+	return nil
+}
+
 // HTTPClient is abstaction under http client, that can Do requests
 type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)

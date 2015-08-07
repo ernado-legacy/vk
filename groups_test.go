@@ -64,9 +64,12 @@ func TestGroupsMethods(t *testing.T) {
 			}`, nil)
 			f := rf()
 			g := Groups{record(mock, &f)}
-			groups, err := g.Get(GroupGetFields{Count: 1})
+			groups, err := g.Get(GroupGetFields{Offset: 10, Count: 15, Extended: true})
 			So(err, ShouldBeNil)
 			So(groups.Count, ShouldEqual, 0)
+			So(f.request.Values.Get("count"), ShouldEqual, "15")
+			So(f.request.Values.Get("offset"), ShouldEqual, "10")
+			So(f.request.Values.Get("extended"), ShouldEqual, "1")
 		})
 	})
 }

@@ -1,10 +1,5 @@
 package vk
 
-import (
-	"errors"
-	"io"
-)
-
 type Resource struct {
 	APIClient
 	RequestFactory
@@ -26,39 +21,6 @@ const (
 	methodGroupsGetMembers = "groups.getMembers"
 	methodGroupsGet        = "groups.get"
 )
-
-// Bool is special format for vk bool values
-// that are represented as integers - 1,0
-type Bool bool
-
-const (
-	byteOne  = 49
-	byteZero = 48
-)
-
-func (v Bool) MarshalJSON() ([]byte, error) {
-	if v {
-		return []byte{byteOne}, nil
-	}
-	return []byte{byteZero}, nil
-}
-
-func (v *Bool) UnmarshalJSON(data []byte) error {
-	if data == nil || len(data) == 0 {
-		return nil
-	}
-	if len(data) != 1 {
-		return io.ErrUnexpectedEOF
-	}
-	if data[0] == byteOne {
-		*v = true
-	} else if data[0] == byteZero {
-		*v = false
-	} else {
-		return errors.New("bool value overflow")
-	}
-	return nil
-}
 
 type Group struct {
 	ID       int    `json:"id"`
@@ -87,20 +49,15 @@ func (g Groups) GetMembers(q GroupSearchFields) (result GroupSearchResult, err e
 	return result, g.Decode(request, &result)
 }
 
-type OffsetCount struct {
-	Offset int `structs:"offset"`
-	Count  int `structs:"count"`
-}
-
 type GroupGetFields struct {
-	Offset   int  `structs:"offset"`
-	Count    int  `structs:"count"`
-	UserID   int  `structs:"user_id,omitempty"`
-	Extended Bool `structs:"extended,omitempty"`
+	Offset   int  `url:"offset,omitempty"`
+	Count    int  `url:"count,omitempty"`
+	UserID   int  `url:"user_id,omitempty"`
+	Extended Bool `url:"extended,omitempty"`
 }
 
 type GroupGetResult struct {
-	Count int `json:"count"`
+	Count int     `json:"count"`
 	Items []Group `json:"items"`
 }
 

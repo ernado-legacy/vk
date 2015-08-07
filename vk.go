@@ -1,12 +1,11 @@
 package vk
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/fatih/structs"
+	"github.com/google/go-querystring/query"
 )
 
 const (
@@ -91,16 +90,9 @@ func (f Factory) Request(method string, arguments interface{}) (request Request)
 	request.Token = f.Token
 	request.Method = method
 	if arguments != nil {
-		var argsMap map[string]interface{}
-		if converted, ok := arguments.(map[string]interface{}); ok {
-			argsMap = converted
-		} else {
-			argsMap = structs.New(arguments).Map()
-		}
-		request.Values = url.Values{}
-		for k, v := range argsMap {
-			request.Values.Add(k, fmt.Sprint(v))
-		}
+		var err error
+		request.Values, err = query.Values(arguments)
+		must(err)
 	}
 	return request
 }
@@ -129,8 +121,8 @@ func (a Auth) URL() string {
 	values.Add(paramRedirectURI, a.RedirectURI)
 	values.Add(paramVersion, defaultVersion)
 	values.Add(paramDisplay, a.Display)
-
 	u.RawQuery = values.Encode()
+
 	return u.String()
 }
 
