@@ -77,13 +77,17 @@ type Auth struct {
 	Display      string
 }
 
+type RequestFactory interface {
+	Request(method string, arguments interface{}) (request Request)
+}
+
 // RequestFactory generates requests
-type RequestFactory struct {
+type Factory struct {
 	Token string
 }
 
 // Request generate new request with provided method and arguments
-func (f RequestFactory) Request(method string, arguments interface{}) (request Request) {
+func (f Factory) Request(method string, arguments interface{}) (request Request) {
 	request.Token = f.Token
 	request.Method = method
 	if arguments != nil {
@@ -141,5 +145,5 @@ var (
 	// DefaultClient uses defaultHTTPClient for transport
 	DefaultClient = New()
 	// DefaultFactory with blank token
-	DefaultFactory = RequestFactory{}
+	DefaultFactory RequestFactory = Factory{}
 )

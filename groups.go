@@ -24,6 +24,7 @@ type Groups struct {
 
 const (
 	methodGroupsGetMembers = "groups.getMembers"
+	methodGroupsGet        = "groups.get"
 )
 
 // Bool is special format for vk bool values
@@ -68,7 +69,7 @@ type Group struct {
 }
 
 type GroupSearchFields struct {
-	ID int
+	ID int `structs:"id"`
 }
 
 type GroupSearchResult struct {
@@ -84,4 +85,25 @@ type groupSearchResponse struct {
 func (g Groups) GetMembers(q GroupSearchFields) (result GroupSearchResult, err error) {
 	request := g.Request(methodGroupsGetMembers, q)
 	return result, g.Decode(request, &result)
+}
+
+type OffsetCount struct {
+	Offset int `structs:"offset"`
+	Count  int `structs:"count"`
+}
+
+type GroupGetFields struct {
+	Offset   int  `structs:"offset"`
+	Count    int  `structs:"count"`
+	UserID   int  `structs:"user_id,omitempty"`
+	Extended Bool `structs:"extended,omitempty"`
+}
+
+type GroupGetResult struct {
+	Count int `json:"count"`
+	Items []Group `json:"items"`
+}
+
+func (g Groups) Get(fields GroupGetFields) (result GroupGetResult, err error) {
+	return result, g.Decode(g.Request(methodGroupsGet, fields), &result)
 }

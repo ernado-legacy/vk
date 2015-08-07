@@ -126,6 +126,9 @@ func TestResponseProcessor(t *testing.T) {
 		Convey("Read error", func() {
 			So(Encode(errorReader{}).To(&Data{}), ShouldNotBeNil)
 		})
+		Convey("Zero response", func() {
+			So(Encoder{}.To(&Data{}), ShouldNotBeNil)
+		})
 		Convey("Error", func() {
 			sData := `{"error":{"error_code":10,"error_msg":"Internal server error: could not get application",
 			"request_params":[{"key":"oauth","value":"1"},{"key":"method","value":"users.get"},
@@ -158,6 +161,35 @@ func TestRequestSerialization(t *testing.T) {
 			Convey("Consistent after unmarshal", func() {
 				newRequest := Request{}
 				So(json.Unmarshal(data, &newRequest), ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestResponseSerialization(t *testing.T) {
+	Convey("New response", t, func() {
+		r := Response{}
+		type payload struct {
+			Foo string
+		}
+		Convey("Marshal ok", func() {
+			_, err := json.Marshal(r)
+			So(err, ShouldBeNil)
+		})
+		Convey("Payload", func() {
+			r := Response{Response: bytes.NewBufferString(`{"Foo": "test"}`).Bytes()}
+			Convey("Marshal ok", func() {
+				d, err := json.Marshal(r)
+				So(err, ShouldBeNil)
+				So(bytes.NewBuffer(d).String(), ShouldEqual, `{"error":{},"response":{"Foo":"test"}}`)
+				So(r.Response.String(), ShouldEqual, `{"Foo": "test"}`)
+				Convey("Unmarshal", func() {
+					res := Response{}
+					So(json.Unmarshal(d, &res), ShouldBeNil)
+					p := payload{}
+					So(json.Unmarshal(res.Response, &p), ShouldBeNil)
+					So(p.Foo, ShouldEqual, "test")
+				})
 			})
 		})
 	})

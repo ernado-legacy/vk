@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -101,6 +102,7 @@ func (r Raw) String() string {
 
 // MarshalJSON returns *m as the JSON encoding of m.
 func (m Raw) MarshalJSON() ([]byte, error) {
+	log.Println("marshalling to", m)
 	return m, nil
 }
 
@@ -111,8 +113,8 @@ func (m *Raw) UnmarshalJSON(data []byte) error {
 }
 
 type Response struct {
-	Error    `json:"error"`
-	Response Raw `json:"response"`
+	Error    `json:"error,omitempty"`
+	Response Raw `json:"response,omitempty"`
 }
 
 func (r Response) To(v interface{}) error {

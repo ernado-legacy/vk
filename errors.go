@@ -13,9 +13,9 @@ type RequestParam struct {
 }
 
 type Error struct {
-	Code    ServerError    `json:"error_code"`
-	Message string         `json:"error_msg"`
-	Params  []RequestParam `json:"request_params"`
+	Code    ServerError    `json:"error_code,omitempty"`
+	Message string         `json:"error_msg,omitempty"`
+	Params  []RequestParam `json:"request_params,omitempty"`
 	Request Request        `json:"-"`
 }
 
