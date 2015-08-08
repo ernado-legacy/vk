@@ -1,9 +1,6 @@
 image: cydev/go:1.5
 git:
   path: github.com/cydev/vk
-env:
-  - GOROOT=/usr/local/go
-  - PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 script:
   - go get -t .
   - go test .
