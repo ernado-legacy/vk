@@ -1,4 +1,4 @@
-image: go1.4
+image: cydev/go:1.5
 git:
   path: github.com/cydev/vk
 env:
@@ -6,7 +6,4 @@ env:
   - PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 script:
   - go get -t .
-  - go get github.com/axw/gocov/gocov
-  - go get golang.org/x/tools/cmd/cover
-  - go get github.com/mattn/goveralls
   - go test .
