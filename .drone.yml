@@ -1,6 +1,12 @@
-image: cydev/go:1.5
+image: cydev/go:1.4
 git:
   path: github.com/cydev/vk
 script:
   - go get -t .
   - go test .
+
+build:
+    image: cydev/go:1.5
+    script:
+      - go get -t .
+      - go test .
