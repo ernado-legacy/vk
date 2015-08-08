@@ -6,6 +6,9 @@ golang vk api
 [![GoDoc](https://godoc.org/github.com/cydev/vk?status.svg)](https://godoc.org/github.com/cydev/vk)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/cydev/vk/blob/master/LICENSE)
 
+internal cydev ci: [![Build Status](http://ci.cydev.ru/api/badge/github.com/cydev/vk/status.svg?branch=master)](http://ci.cydev.ru/github.com/cydev/vk)
+
+#### Usage
 ```
 go get github.com/cydev/vk
 ```
