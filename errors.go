@@ -12,6 +12,12 @@ type RequestParam struct {
 	Value string `json:"value"`
 }
 
+type ExecuteError struct {
+	Method  string      `json:"method"`
+	Code    ServerError `json:"error_code"`
+	Message string      `json:"error_msg"`
+}
+
 type Error struct {
 	Code    ServerError    `json:"error_code,omitempty"`
 	Message string         `json:"error_msg,omitempty"`
@@ -23,15 +29,12 @@ func (e *Error) setRequest(r Request) {
 	e.Request = r
 }
 
-func (e Error) ServerError() error {
-	if e.Code == ErrZero {
-		return nil
-	}
-	return e
-}
-
 func (e Error) Error() string {
 	return fmt.Sprintf("%s (%d)", e.Message, e.Code)
+}
+
+func (e ExecuteError) Error() string {
+	return fmt.Sprintf("%s: %s (%d)", e.Method, e.Message, e.Code)
 }
 
 // Is returns true, if err equals (or is Error with code equals) e

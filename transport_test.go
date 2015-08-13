@@ -161,6 +161,9 @@ func TestRequestSerialization(t *testing.T) {
 		So(req.URL.Host, ShouldEqual, defaultHost)
 		So(req.URL.String(), ShouldEqual, "https://api.vk.com/method/users.get?access_token=token&foo=bar&https=1&v=5.35")
 
+		Convey("JS", func(){
+			So(r.JS(), ShouldEqual, `API.users.get({"foo":"bar"})`)
+		})
 		Convey("Marshal ok", func() {
 			data, err := json.Marshal(r)
 			So(err, ShouldBeNil)

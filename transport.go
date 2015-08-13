@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -120,6 +122,20 @@ func (r Request) HTTP() (req *http.Request) {
 	return req
 }
 
+func (r Request) JS() string {
+	args := make(map[string]string)
+	for k := range r.Values {
+		args[k] = r.Values.Get(k)
+	}
+	js := new(bytes.Buffer)
+	encoder := json.NewEncoder(js)
+	must(encoder.Encode(args))
+	jsString := js.String()
+	jsString = strings.TrimSpace(jsString)
+
+	return fmt.Sprintf("API.%s(%s)", r.Method, jsString)
+}
+
 type vkResponseProcessor struct {
 	input io.Reader
 }
@@ -154,7 +170,18 @@ func (m *Raw) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type Errors []ExecuteError
+
+func (e Errors) Error() string {
+	var s []string
+	for _, v := range e {
+		s = append(s, v.Error())
+	}
+	return fmt.Sprintln("Execute errors:", strings.Join(s, ", "))
+}
+
 type Response struct {
+	Errors   Errors `json:"execute_errors,omitempty"`
 	Error    `json:"error,omitempty"`
 	Response Raw `json:"response,omitempty"`
 }
@@ -172,6 +199,16 @@ func (d vkResponseProcessor) To(response *Response) error {
 		return err
 	}
 	return response.ServerError()
+}
+
+func (r Response) ServerError() error {
+	if r.Errors != nil {
+		return r.Errors
+	}
+	if r.Error.Code == ErrZero {
+		return nil
+	}
+	return r.Error
 }
 
 func Process(input io.Reader) (response *Response, err error) {
