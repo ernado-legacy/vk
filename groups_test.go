@@ -120,7 +120,7 @@ func TestGroups(t *testing.T) {
 					So(v.UnmarshalJSON([]byte("-1")), ShouldNotBeNil)
 					So(v.UnmarshalJSON([]byte("9")), ShouldNotBeNil)
 
-					So(v.UnmarshalJSON([]byte{}), ShoulЕdBeNil)
+					So(v.UnmarshalJSON([]byte{}), ShouldBeNil)
 					So(*v, ShouldEqual, false)
 				})
 			})
