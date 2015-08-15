@@ -36,11 +36,11 @@ func TestErrors(t *testing.T) {
 			data := []byte(`{"error": 1}`)
 			v := Data{}
 			So(json.Unmarshal(data, &v), ShouldBeNil)
-			So(v.Error, ShouldEqual, ErrUnknown)
+			So(v.Error.Error(), ShouldEqual, ErrUnknown.Error())
 			Convey("Use as error", func() {
 				var err error
 				err = v.Error
-				So(err.Error(), ShouldEqual, "1")
+				So(err.Error(), ShouldEqual, "ErrUnknown")
 			})
 		})
 	})

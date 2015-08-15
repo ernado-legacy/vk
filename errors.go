@@ -2,9 +2,9 @@ package vk
 
 import (
 	"fmt"
-	"strconv"
 )
 
+//go:generate stringer -type=ServerError
 type ServerError int
 
 type RequestParam struct {
@@ -70,7 +70,7 @@ type ErrorResponse struct {
 }
 
 func (s ServerError) Error() string {
-	return strconv.Itoa(int(s))
+	return s.String()
 }
 
 const (

@@ -63,7 +63,8 @@ func (v *Bool) UnmarshalJSON(data []byte) error {
 	} else if data[0] == byteZero {
 		*v = false
 	} else {
-		return errors.New("bool value overflow")
+		log.Println("unmarshal:", bytes.NewBuffer(data))
+		return errors.New("json unmarshal: Bool value overflow")
 	}
 	return nil
 }

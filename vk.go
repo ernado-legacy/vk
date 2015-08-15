@@ -8,6 +8,10 @@ import (
 	"github.com/google/go-querystring/query"
 )
 
+var (
+	Debug = false
+)
+
 const (
 	paramCode         = "code"
 	paramToken        = "access_token"
@@ -47,6 +51,7 @@ func int64s(v int64) string {
 // Client for vk api
 type Client struct {
 	httpClient HTTPClient
+	Groups     Groups
 }
 
 // APIClient preforms request and fills
@@ -130,6 +135,20 @@ func (a Auth) URL() string {
 func New() *Client {
 	c := new(Client)
 	c.SetHTTPClient(defaultHTTPClient)
+	resource := Resource{}
+	resource.APIClient = c
+	resource.RequestFactory = DefaultFactory
+	c.Groups = Groups{resource}
+	return c
+}
+
+func NewWithToken(token string) *Client {
+	c := new(Client)
+	c.SetHTTPClient(defaultHTTPClient)
+	resource := Resource{}
+	resource.APIClient = c
+	resource.RequestFactory = Factory{token}
+	c.Groups = Groups{resource}
 	return c
 }
 

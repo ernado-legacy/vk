@@ -120,7 +120,7 @@ func TestGroups(t *testing.T) {
 					So(v.UnmarshalJSON([]byte("-1")), ShouldNotBeNil)
 					So(v.UnmarshalJSON([]byte("9")), ShouldNotBeNil)
 
-					So(v.UnmarshalJSON([]byte{}), ShouldBeNil)
+					So(v.UnmarshalJSON([]byte{}), ShoulЕdBeNil)
 					So(*v, ShouldEqual, false)
 				})
 			})
@@ -130,7 +130,7 @@ func TestGroups(t *testing.T) {
 				`)
 				value := Group{}
 				So(json.Unmarshal(data, &value), ShouldBeNil)
-				So(value.IsClosed, ShouldEqual, true)
+				So(value.IsClosed, ShouldEqual, GroupClosed)
 			})
 			Convey("False", func() {
 				data := []byte(`
@@ -138,7 +138,7 @@ func TestGroups(t *testing.T) {
 				`)
 				value := Group{}
 				So(json.Unmarshal(data, &value), ShouldBeNil)
-				So(value.IsClosed, ShouldEqual, false)
+				So(value.IsClosed, ShouldEqual, GroupOpen)
 			})
 		})
 	})
