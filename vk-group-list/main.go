@@ -1,38 +1,58 @@
 package main
 
 import (
-	"flag"
-
 	"fmt"
 	"github.com/cydev/vk"
-	"os"
+	"github.com/spf13/viper"
+	"time"
 )
 
 var (
-	userID int
-	token  string
+	groupID int
+	token   string
 )
 
 func init() {
-	flag.StringVar(&token, "token", "", "vk api token")
-	flag.IntVar(&userID, "id", 0, "user id")
+	viper.SetEnvPrefix("vk")
+	viper.BindEnv("token")
+	viper.BindEnv("id")
+}
+
+func getAllUsers(api *vk.Client) (err error) {
+	var (
+		gotUsers int
+		n        int
+		users    []vk.User
+	)
+	fields := vk.GroupGetFields{
+		Fields:  vk.UserFields,
+		Offset:  0,
+		GroupID: groupID,
+	}
+	for {
+		fields.Offset = gotUsers
+		users, n, err = api.Groups.GetBatch(fields)
+		if err != nil {
+			return err
+		}
+		gotUsers += len(users)
+		fmt.Println("got", gotUsers, "of", n)
+		if gotUsers >= n {
+			// got all users
+			fmt.Println("got all", gotUsers)
+			return nil
+		}
+	}
 }
 
 func main() {
-	flag.Parse()
+	viper.AutomaticEnv()
+	groupID = viper.GetInt("id")
+	token = viper.GetString("token")
+	fmt.Println(groupID, token)
 	api := vk.NewWithToken(token)
-	fields := vk.GroupGetFields{
-		Fields:  "sex",
-		Offset:  0,
-		GroupID: 26188163,
-	}
-	users, n, err := api.Groups.GetBatch(fields)
-	fmt.Println(n)
-	if err != nil {
-		fmt.Println("error:", err)
-		os.Exit(2)
-	}
-	for _, user := range users {
-		fmt.Printf("%+v\n", user)
-	}
+	start := time.Now()
+	getAllUsers(api)
+	end := time.Now()
+	fmt.Println("users loaded", end.Sub(start))
 }

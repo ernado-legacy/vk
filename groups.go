@@ -158,7 +158,7 @@ func (g Groups) GetBatch(getFields GroupGetFields) ([]User, int, error) {
 	}{Code: code.String()}
 	req := g.Request(methodExecute, fields)
 	result := struct {
-		Count   int    `json:"members_count"`
+		Count   int    `json:"count"`
 		Members []User `json:"members"`
 	}{}
 	return result.Members, result.Count, g.Decode(req, &result)

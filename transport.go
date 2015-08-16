@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	defaultHTTPTimeout        = 15 * time.Second
-	defaultRequestTimeout     = 25 * time.Second
+	defaultHTTPTimeout        = 60 * time.Second
+	defaultRequestTimeout     = 120 * time.Second
 	defaultKeepAliveInterval  = 60 * time.Second
 	defaultHTTPHeadersTimeout = defaultRequestTimeout
 )
@@ -85,14 +85,25 @@ func (c *Client) Do(request Request) (response *Response, err error) {
 	response = new(Response)
 	response.setRequest(request)
 	req := request.HTTP()
-	res, err := c.httpClient.Do(req)
+	start := time.Now()
+	log.Println("DO", request.Method)
+	var res *http.Response
+	for attempt:= 1; attempt<5; attempt++  {
+		res, err = c.httpClient.Do(req)
+		if err == nil {
+			break
+		}
+		log.Println("HTTP attempt", err, attempt)
+		time.Sleep(time.Second * 3)
+	}
 	if err != nil {
+		log.Println("HTTP fatal", err)
 		return nil, err
 	}
+	log.Println("HTTP", res.Status, time.Now().Sub(start))
 	if res.StatusCode != http.StatusOK {
 		return nil, ErrBadResponseCode
 	}
-
 	return Process(res.Body)
 }
 
