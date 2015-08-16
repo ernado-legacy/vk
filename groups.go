@@ -1,5 +1,8 @@
 package vk
+
 import "fmt"
+import "bytes"
+import "text/template"
 
 type Resource struct {
 	APIClient
@@ -99,6 +102,7 @@ type GroupGetFields struct {
 	Offset   int    `url:"offset,omitempty"`
 	Count    int    `url:"count,omitempty"`
 	UserID   int    `url:"user_id,omitempty"`
+	GroupID  int    `url:"group_id,omitempty"`
 	Extended Bool   `url:"extended,omitempty"`
 	Fields   string `url:"fields,omitempty"`
 }
@@ -120,4 +124,42 @@ func (g Groups) GetForUser(id int) ([]Group, error) {
 
 func (g Groups) Get(fields GroupGetFields) (result GroupGetResult, err error) {
 	return result, g.Decode(g.Request(methodGroupsGet, fields), &result)
+}
+
+// batch get
+func (g Groups) GetBatch(getFields GroupGetFields) ([]User, int, error) {
+	js := `var group_id = {{.GroupID}};
+	var count = 1000;
+	var offset = {{.Offset}};
+	var calls = 1;
+	var response = API.groups.getMembers({"count": count, "offset": offset, "group_id": group_id, fields: "{{ .Fields }}"});
+	var members_count = response.count;
+	var members = response.items;
+	offset = offset + count;
+	while ((offset < members_count) && (calls < 25)) {
+		response = API.groups.getMembers({"count": count, "offset": offset, "group_id": group_id, fields: "{{ .Fields }}"});
+		members = members + response.items;
+		members_count = response.count;
+		offset = offset + count;
+		calls = calls + 1;
+	}
+	return {count: members_count, members: members};`
+
+	// rendering js from template
+	code := new(bytes.Buffer)
+	t := template.Must(template.New("get20k.js").Parse(js))
+	if err := t.Execute(code, getFields); err != nil {
+		return nil, 0, err
+	}
+
+	// preparing request fields
+	fields := struct {
+		Code string `url:"code"`
+	}{Code: code.String()}
+	req := g.Request(methodExecute, fields)
+	result := struct {
+		Count   int    `json:"members_count"`
+		Members []User `json:"members"`
+	}{}
+	return result.Members, result.Count, g.Decode(req, &result)
 }

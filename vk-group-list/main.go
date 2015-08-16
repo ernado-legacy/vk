@@ -1,54 +1,38 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/url"
-	"strconv"
+	"flag"
 
-	. "github.com/cydev/vk"
-	"strings"
+	"fmt"
+	"github.com/cydev/vk"
 	"os"
 )
 
-type BlankResponse struct {
-	Error `json:"error"`
+var (
+	userID int
+	token  string
+)
+
+func init() {
+	flag.StringVar(&token, "token", "", "vk api token")
+	flag.IntVar(&userID, "id", 0, "user id")
 }
 
 func main() {
-	token := os.Args[1]
-	group := os.Args[2]
-
-	var requests []string
-	for i := 0; i < 20; i++ {
-		args := url.Values{}
-		args.Add("count", "1000")
-		args.Add("offset", strconv.Itoa(i * 1000))
-		args.Add("group_id", group)
-
-		r := Request{
-			Method: "groups.getMembers",
-			Values: args,
-		}
-		requests = append(requests, r.JS())
+	flag.Parse()
+	api := vk.NewWithToken(token)
+	fields := vk.GroupGetFields{
+		Fields:  "sex",
+		Offset:  0,
+		GroupID: 26188163,
 	}
-
-	code := fmt.Sprintf("return [%s];", strings.Join(requests, ","))
-
-	fmt.Println(code)
-	args := url.Values{}
-	args.Add("code", code)
-
-	req := Request{
-		Token:  token,
-		Method: "execute",
-		Values: args,
-	}
-
-	res, err := DefaultClient.Do(req)
+	users, n, err := api.Groups.GetBatch(fields)
+	fmt.Println(n)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("error:", err)
+		os.Exit(2)
 	}
-	log.Println(res.Error)
-	log.Println(res.Response)
+	for _, user := range users {
+		fmt.Printf("%+v\n", user)
+	}
 }
