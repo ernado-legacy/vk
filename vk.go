@@ -33,7 +33,7 @@ const (
 	defaultHost    = "api.vk.com"
 	defaultPath    = "/method/"
 	defaultScheme  = "https"
-	defaultVersion = "5.35"
+	defaultVersion = "5.103"
 	defaultMethod  = "GET"
 	defaultHTTPS   = "1"
 
@@ -52,6 +52,7 @@ func int64s(v int64) string {
 type Client struct {
 	httpClient HTTPClient
 	Groups     Groups
+	Video      Video
 }
 
 // APIClient preforms request and fills
@@ -148,6 +149,7 @@ func NewWithToken(token string) *Client {
 	resource := Resource{}
 	resource.APIClient = c
 	resource.RequestFactory = Factory{token}
+	c.Video = Video{resource}
 	c.Groups = Groups{resource}
 	return c
 }
