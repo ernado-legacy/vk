@@ -1,6 +1,6 @@
 image: cydev/go:1.5
 git:
-  path: github.com/cydev/vk
+  path: github.com/ernado-legacy/vk
 script:
   - go get -t .
   - go test .
