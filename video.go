@@ -1,5 +1,10 @@
 package vk
 
+import (
+	"bytes"
+	"encoding/json"
+)
+
 const (
 	methodVideoGet = "video.get"
 )
@@ -15,10 +20,29 @@ type VideoGetFields struct {
 	Videos   string `url:"videos,omitempty"`
 }
 
+type videoImage struct {
+	Height int    `json:"height"`
+	Width  int    `json:"width"`
+	URL    string `json:"url"`
+}
+
 type VideoImage struct {
 	Height int    `json:"height"`
 	Width  int    `json:"width"`
 	URL    string `json:"url"`
+}
+
+func (v *VideoImage) UnmarshalJSON(b []byte) error {
+	if bytes.HasPrefix(b, []byte(`{`)) {
+		// Blank image.
+		return nil
+	}
+	var im videoImage
+	if err := json.Unmarshal(b, &im); err != nil {
+		return err
+	}
+	*v = VideoImage(im)
+	return nil
 }
 
 type VideoItem struct {
