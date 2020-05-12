@@ -33,7 +33,7 @@ type VideoImage struct {
 }
 
 func (v *VideoImage) UnmarshalJSON(b []byte) error {
-	if bytes.HasPrefix(b, []byte(`{`)) {
+	if bytes.HasPrefix(b, []byte(`[`)) {
 		// Blank image.
 		return nil
 	}
